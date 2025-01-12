@@ -7,6 +7,9 @@ import org.springframework.web.servlet.LocaleResolver;
 
 import java.util.Locale;
 
+/**
+ * Classe per gestire i messaggi localizzati utilizzando MessageSource.
+ */
 @Component
 public class MessageHeaderHolder {
 
@@ -22,8 +25,8 @@ public class MessageHeaderHolder {
     /**
      * Recupera un messaggio localizzato specificando il codice, gli argomenti e il locale.
      *
-     * @param code  Codice del messaggio (chiave nei file .properties).
-     * @param args  Argomenti da inserire nel messaggio.
+     * @param code   Codice del messaggio (chiave nei file .properties).
+     * @param args   Argomenti da inserire nel messaggio.
      * @param locale Locale per la traduzione.
      * @return Messaggio tradotto.
      */
@@ -39,7 +42,12 @@ public class MessageHeaderHolder {
      * @return Messaggio tradotto.
      */
     public String getMessage(String code, Object[] args) {
-        Locale locale = localeResolver.resolveLocale(null);
+        Locale locale;
+        try {
+            locale = localeResolver.resolveLocale(null); // Potrebbe generare un errore
+        } catch (Exception ex) {
+            locale = Locale.ENGLISH; // Fallback al locale di default
+        }
         return getMessage(code, args, locale);
     }
 

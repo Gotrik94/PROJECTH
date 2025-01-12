@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Configura lo stato senza sessione
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/user/**").hasRole("USER") // Richiede il ruolo USER
+                        .requestMatchers("/user/register").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN") // Richiede il ruolo ADMIN
                         // Tutti gli altri percorsi sono accessibili senza autenticazione
                         .anyRequest().permitAll()

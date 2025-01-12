@@ -1,9 +1,16 @@
 package com.example.demo.controller;
 
+import com.example.demo.model.User;
+import com.example.demo.service.UserService;
+import com.example.demo.util.JwtUtil;
+import com.example.demo.util.MessageHeaderHolder;
 import com.example.demo.dtos.LoginRequest;
-import com.example.demo.service.AuthenticationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,12 +21,55 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+    private final UserService userService;
+    private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
+    private final MessageHeaderHolder messageHeaderHolder;
+
     @Autowired
-    private AuthenticationService authenticationService;
+    public AuthController(UserService userService, JwtUtil jwtUtil, PasswordEncoder passwordEncoder, MessageHeaderHolder messageHeaderHolder) {
+        this.userService = userService;
+        this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
+        this.messageHeaderHolder = messageHeaderHolder;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        String token = authenticationService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
-        return ResponseEntity.ok(Map.of("token", token));
+
+        if (loginRequest.getUsername() == null || loginRequest.getPassword() == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "error", "Invalid request.",
+                            "code", HttpStatus.BAD_REQUEST.value()
+                    ));
+        }
+
+        try {
+            User user = userService.findByUsername(loginRequest.getUsername())
+                    .orElseThrow(() -> new UsernameNotFoundException(
+                            messageHeaderHolder.getMessage("auth.credentials.invalid")));
+
+            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                throw new BadCredentialsException(
+                        messageHeaderHolder.getMessage("auth.credentials.invalid"));
+            }
+
+            // Genera il token JWT
+            String token = jwtUtil.generateToken(user);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", messageHeaderHolder.getMessage("auth.success"),
+                    "token", token
+            ));
+        } catch (UsernameNotFoundException | BadCredentialsException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "error", ex.getMessage(),
+                            "code", HttpStatus.UNAUTHORIZED.value()
+                    ));
+        }
     }
 }
+
