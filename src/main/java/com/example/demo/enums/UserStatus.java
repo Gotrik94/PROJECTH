@@ -1,35 +1,70 @@
 package com.example.demo.enums;
 
+import com.example.demo.util.MessageHeaderHolder;
+
+/**
+ * Enum che rappresenta i possibili stati di un utente nel sistema.
+ */
 public enum UserStatus {
-    ONLINE("Online"),
-    OFFLINE("Offline"),
-    IN_GAME("In Game"),
-    AWAY("Away");
 
-    private final String description;
+    /**
+     * L'utente è online.
+     */
+    ONLINE("user.status.online"),
 
-    // Costruttore per associare una descrizione a ogni stato
-    UserStatus(String description) {
-        this.description = description;
+    /**
+     * L'utente è offline.
+     */
+    OFFLINE("user.status.offline"),
+
+    /**
+     * L'utente è attualmente in una partita.
+     */
+    IN_GAME("user.status.inGame"),
+
+    /**
+     * L'utente è inattivo o lontano.
+     */
+    AWAY("user.status.away");
+
+    /**
+     * Chiave del messaggio localizzato per lo stato dell'utente.
+     */
+    private final String messageKey;
+
+    /**
+     * Costruttore per associare una chiave di messaggio a ogni stato.
+     *
+     * @param messageKey La chiave del messaggio localizzato.
+     */
+    UserStatus(String messageKey) {
+        this.messageKey = messageKey;
     }
 
-    // Metodo per ottenere la descrizione
-    public String getDescription() {
-        return description;
+    /**
+     * Restituisce la descrizione dello stato basata sulla chiave del messaggio.
+     *
+     * @param messageHeaderHolder Il gestore dei messaggi localizzati.
+     * @return La descrizione dello stato localizzata.
+     */
+    public String getDescription(MessageHeaderHolder messageHeaderHolder) {
+        return messageHeaderHolder.getMessage(messageKey);
     }
 
-    // Metodo statico per ottenere un valore dell'enum da una stringa
-    public static UserStatus fromString(String status) {
-        if (status == null || status.isEmpty()) {
-            throw new IllegalArgumentException("Lo stato non può essere null o vuoto");
-        }
-
+    /**
+     * Restituisce lo stato corrispondente a una stringa specificata.
+     *
+     * @param status La stringa da confrontare con i nomi degli stati.
+     * @param messageHeaderHolder Il gestore dei messaggi localizzati.
+     * @return Lo stato corrispondente alla stringa.
+     * @throws IllegalArgumentException Se la stringa non corrisponde a nessuno stato.
+     */
+    public static UserStatus fromString(String status, MessageHeaderHolder messageHeaderHolder) {
         for (UserStatus userStatus : UserStatus.values()) {
             if (userStatus.name().equalsIgnoreCase(status)) {
                 return userStatus;
             }
         }
-
-        throw new IllegalArgumentException("Stato non valido: " + status);
+        throw new IllegalArgumentException(messageHeaderHolder.getMessage("error.invalid.status") + ": " + status);
     }
 }
