@@ -1,7 +1,12 @@
 package com.example.demo.dtos;
 
+import jakarta.validation.constraints.NotNull;
+
 public class LoginRequest {
+    @NotNull(message = "Username is required")
     private String username;
+
+    @NotNull(message = "Password is required")
     private String password;
 
     public String getUsername() {

@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -20,10 +22,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
-
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
     @Autowired
     private UserService userService;
-
     @Autowired
     private MessageHeaderHolder messageHeaderHolder;
 
@@ -35,8 +36,10 @@ public class UserController {
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
+        log.info("Registration attempt for username: {}", user.getUsername());
         // Controllo se l'username è già in uso
         if (userService.findByUsername(user.getUsername()).isPresent()) {
+            log.warn("Registration failed: username already exists - {}", user.getUsername());
             String errorMessage = messageHeaderHolder.getMessage("user.user.exists");
             return ResponseEntity.badRequest()
                     .body(Map.of(
@@ -46,6 +49,7 @@ public class UserController {
         }
         // Controllo se l'email è già in uso
         if (userService.findByEmail(user.getEmail()).isPresent()) {
+            log.warn("Registration failed: email already exists - {}", user.getUsername());
             String errorMessage = messageHeaderHolder.getMessage("user.email.exists");
             return ResponseEntity.badRequest()
                     .body(Map.of(
@@ -55,6 +59,7 @@ public class UserController {
         }
         // Registrazione dell'utente
         User registeredUser = userService.registerUser(user);
+        log.info("User registered successfully: {}", registeredUser.getUsername());
 
         // Messaggio di successo
         String successMessage = messageHeaderHolder.getMessage("user.created");
@@ -78,17 +83,21 @@ public class UserController {
     @GetMapping("/profile")
     public ResponseEntity<?> getUserProfile(Authentication authentication) {
         String username = authentication.getName();
+        log.info("Profile request for username: {}", username);
         return userService.findByUsername(username)
                 .map(user -> ResponseEntity.ok().body(Map.of(
                         "message", messageHeaderHolder.getMessage("user.profile.found"),
                         "code", HttpStatus.OK.value(),
                         "data", user
                 )))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of(
-                                "message", messageHeaderHolder.getMessage("user.notfound"),
-                                "code", HttpStatus.NOT_FOUND.value()
-                        )));
+                .orElseGet(() -> {
+                    log.warn("Profile not found for username: {}", username);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of(
+                                    "message", messageHeaderHolder.getMessage("user.notfound"),
+                                    "code", HttpStatus.NOT_FOUND.value()
+                            ));
+                });
     }
 
     /**
@@ -103,8 +112,12 @@ public class UserController {
     public ResponseEntity<?> updateGameStats(@RequestParam String username,
                                              @RequestParam int gamesPlayed,
                                              @RequestParam int gamesWon) {
+        log.info("Updating game stats for username: {}, gamesPlayed: {}, gamesWon: {}", username, gamesPlayed, gamesWon);
+
         userService.updateGameStats(username, gamesPlayed, gamesWon);
         String successMessage = messageHeaderHolder.getMessage("user.stats.updated");
+        log.info("Game stats updated successfully for username: {}", username);
+
         return ResponseEntity.ok(Map.of(
                 "message", successMessage,
                 "code", HttpStatus.OK.value()
@@ -120,8 +133,12 @@ public class UserController {
      */
     @PutMapping("/update-status")
     public ResponseEntity<?> updateUserStatus(@RequestParam String username, @RequestParam UserStatus status) {
+        log.info("Updating status for username: {} to status: {}", username, status);
+
         userService.updateUserStatus(username, status);
         String successMessage = messageHeaderHolder.getMessage("user.status.updated");
+        log.info("Status updated successfully for username: {}", username);
+
         return ResponseEntity.ok(Map.of(
                 "message", successMessage,
                 "code", HttpStatus.OK.value()
@@ -136,19 +153,25 @@ public class UserController {
      */
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteUser(@RequestParam String username) {
+        log.info("Delete request for username: {}", username);
+
         return userService.findByUsername(username)
                 .map(user -> {
                     userService.deleteUser(user);
                     String successMessage = messageHeaderHolder.getMessage("user.deleted");
+                    log.info("User deleted successfully: {}", username);
                     return ResponseEntity.ok(Map.of(
                             "message", successMessage,
                             "code", HttpStatus.OK.value()
                     ));
                 })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of(
-                                "message", messageHeaderHolder.getMessage("user.notfound"),
-                                "code", HttpStatus.NOT_FOUND.value()
-                        )));
+                .orElseGet(() -> {
+                    log.warn("User not found for deletion: {}", username);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of(
+                                    "message", messageHeaderHolder.getMessage("user.notfound"),
+                                    "code", HttpStatus.NOT_FOUND.value()
+                            ));
+                });
     }
 }

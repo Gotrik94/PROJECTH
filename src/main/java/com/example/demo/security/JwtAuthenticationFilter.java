@@ -2,17 +2,20 @@ package com.example.demo.security;
 
 import com.example.demo.util.JwtUtil;
 import com.example.demo.util.MessageHeaderHolder;
+import io.jsonwebtoken.JwtException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-
 
 /**
  * Filtro di autenticazione per validare i token JWT nelle richieste in ingresso.
@@ -20,6 +23,8 @@ import java.io.IOException;
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtUtil jwtUtil;
     private final MessageHeaderHolder messageHeaderHolder;
@@ -29,7 +34,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.messageHeaderHolder = messageHeaderHolder;
     }
 
-
     /**
      * Determina se il filtro deve essere applicato alla richiesta corrente.
      *
@@ -38,9 +42,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // Escludi i path non protetti
         String path = request.getRequestURI();
-        return path.equals("/api/user/register"); // Aggiungi altri path esclusi se necessario
+        boolean shouldNotFilter = path.equals("/api/user/register") || path.equals("/api/auth/login");
+        log.debug("shouldNotFilter: {} for path: {}", shouldNotFilter, path);
+        return shouldNotFilter;
     }
 
     /**
@@ -49,29 +54,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * @param request La richiesta HTTP in ingresso.
      * @param response La risposta HTTP in uscita.
      * @param filterChain La catena di filtri.
+     * @throws ServletException In caso di errori di servlet.
      * @throws IOException In caso di errori di I/O.
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws IOException {
+            throws ServletException, IOException {
         try {
             String authorizationHeader = request.getHeader("Authorization");
+            log.debug("Authorization header: {}", authorizationHeader);
 
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 String token = authorizationHeader.substring(7);
+                log.debug("JWT token extracted: {}", token);
+
                 String username = jwtUtil.extractUsername(token);
+                log.debug("Username extracted from token: {}", username);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     if (jwtUtil.validateToken(token, username)) {
                         UsernamePasswordAuthenticationToken authenticationToken =
                                 new UsernamePasswordAuthenticationToken(username, null, null);
                         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                        log.info("Authentication set for user: {}", username);
+                    } else {
+                        log.warn("Invalid token for username: {}", username);
                     }
                 }
             }
             filterChain.doFilter(request, response);
-        } catch (Exception e) {
-            // In caso di errore, restituisci un messaggio dettagliato
+        } catch (JwtException ex) {
+            log.error("JWT exception: {}", ex.getMessage());
+            // Gestisce errori legati al token JWT
             response.setContentType("application/json");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write(String.format(

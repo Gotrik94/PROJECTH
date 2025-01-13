@@ -6,6 +6,8 @@ import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -18,9 +20,9 @@ import java.util.Optional;
 @Service
 public class UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -31,6 +33,7 @@ public class UserService {
      * @return Optional contenente l'utente se trovato.
      */
     public Optional<User> findByUsername(String username) {
+        log.debug("Searching for user by username: {}", username);
         return userRepository.findByUsername(username);
     }
 
@@ -41,6 +44,7 @@ public class UserService {
      * @return Optional contenente l'utente se trovato.
      */
     public Optional<User> findByEmail(String email) {
+        log.debug("Searching for user by email: {}", email);
         return userRepository.findByEmail(email);
     }
 
@@ -52,11 +56,12 @@ public class UserService {
      * @return Utente registrato.
      */
     public User registerUser(User user) {
-        // Codifica la password
+        log.info("Registering user with username: {}", user.getUsername());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        // Imposta la data di registrazione e salva
         user.setRegistrationDate(LocalDateTime.now());
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        log.info("User registered successfully: {}", savedUser.getUsername());
+        return savedUser;
     }
 
     /**
@@ -65,9 +70,11 @@ public class UserService {
      * @param username Nome utente per il quale aggiornare l'ultimo login.
      */
     public void updateLastLogin(String username) {
+        log.info("Updating last login for username: {}", username);
         userRepository.findByUsername(username).ifPresent(user -> {
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
+            log.info("Last login updated for username: {}", username);
         });
     }
 
@@ -79,10 +86,12 @@ public class UserService {
      * @param gamesWon Numero di partite vinte.
      */
     public void updateGameStats(String username, int gamesPlayed, int gamesWon) {
+        log.info("Updating game stats for username: {}, gamesPlayed: {}, gamesWon: {}", username, gamesPlayed, gamesWon);
         userRepository.findByUsername(username).ifPresent(user -> {
             user.setGamesPlayed(gamesPlayed);
             user.setGamesWon(gamesWon);
             userRepository.save(user);
+            log.info("Game stats updated successfully for username: {}", username);
         });
     }
 
@@ -93,9 +102,11 @@ public class UserService {
      * @param status Nuovo stato da impostare.
      */
     public void updateUserStatus(String username, UserStatus status) {
+        log.info("Updating status for username: {} to status: {}", username, status);
         userRepository.findByUsername(username).ifPresent(user -> {
             user.setStatus(status);
             userRepository.save(user);
+            log.info("Status updated successfully for username: {}", username);
         });
     }
 
@@ -105,6 +116,8 @@ public class UserService {
      * @param user Utente da eliminare.
      */
     public void deleteUser(User user) {
+        log.info("Deleting user: {}", user.getUsername());
         userRepository.delete(user);
+        log.info("User deleted successfully: {}", user.getUsername());
     }
 }

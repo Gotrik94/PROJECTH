@@ -6,6 +6,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,19 +20,14 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final SecretKey key;
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
     private final JwtConfig jwtConfig;
+    private final SecretKey key;
 
     @Autowired
     public JwtUtil(JwtConfig jwtConfig) {
         this.jwtConfig = jwtConfig;
-
-        // Decodifica la chiave segreta e valida la lunghezza
-        byte[] keyBytes = Decoders.BASE64.decode(jwtConfig.getSecret());
-        if (keyBytes.length < 32) {
-            throw new IllegalArgumentException("La chiave segreta deve essere lunga almeno 256 bit (32 byte).");
-        }
-        this.key = Keys.hmacShaKeyFor(keyBytes);
+        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtConfig.getSecret()));
     }
 
     /**
@@ -39,17 +36,19 @@ public class JwtUtil {
      * @param user L'utente per il quale generare il token.
      * @return Il token JWT generato.
      */
-    // Genera un token con i dati dell'utente
     public String generateToken(User user) {
-        return Jwts.builder()
+        log.info("Generating token for user: {}", user.getUsername());
+        String token = Jwts.builder()
                 .setSubject(user.getUsername())
                 .claim("role", user.getRole())
                 .claim("email", user.getEmail())
                 .setIssuer(jwtConfig.getIssuer())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()))
-                .signWith(key) // Usa la chiave aggiornata
+                .signWith(key)
                 .compact();
+        log.debug("Token generated: {}", token);
+        return token;
     }
 
     /**
@@ -59,6 +58,7 @@ public class JwtUtil {
      * @return Il nome utente estratto dal token.
      */
     public String extractUsername(String token) {
+        log.debug("Extracting username from token: {}", token);
         return extractAllClaims(token).getSubject();
     }
 
@@ -70,8 +70,15 @@ public class JwtUtil {
      * @return true se il token è valido, false altrimenti.
      */
     public boolean validateToken(String token, String username) {
+        log.debug("Validating token for username: {}", username);
         String extractedUsername = extractUsername(token);
-        return extractedUsername.equals(username) && !isTokenExpired(token);
+        boolean isValid = extractedUsername.equals(username) && !isTokenExpired(token);
+        if (isValid) {
+            log.info("Token is valid for username: {}", username);
+        } else {
+            log.warn("Token validation failed for username: {}", username);
+        }
+        return isValid;
     }
 
     /**
@@ -82,7 +89,9 @@ public class JwtUtil {
      */
     private boolean isTokenExpired(String token) {
         Date expiration = extractAllClaims(token).getExpiration();
-        return expiration.before(new Date(System.currentTimeMillis() - jwtConfig.getClockSkew() * 1000));
+        boolean isExpired = expiration.before(new Date(System.currentTimeMillis() - jwtConfig.getClockSkew() * 1000));
+        log.debug("Token expiration status: {}", isExpired);
+        return isExpired;
     }
 
     /**
@@ -92,8 +101,9 @@ public class JwtUtil {
      * @return I claims estratti dal token.
      */
     private Claims extractAllClaims(String token) {
+        log.debug("Extracting all claims from token: {}", token);
         return Jwts.parserBuilder()
-                .setSigningKey(key) // Metodo aggiornato per impostare la chiave
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -109,6 +119,7 @@ public class JwtUtil {
      * @return Il valore del claim estratto.
      */
     public <T> T extractClaim(String token, String claimName, Class<T> claimType) {
+        log.debug("Extracting claim: {} from token: {}", claimName, token);
         return extractAllClaims(token).get(claimName, claimType);
     }
 }
