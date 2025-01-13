@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+
+/**
+ * Controller per la gestione dell'autenticazione degli utenti.
+ * Fornisce endpoint per il login.
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -35,6 +40,12 @@ public class AuthController {
         this.messageHeaderHolder = messageHeaderHolder;
     }
 
+    /**
+     * Effettua il login di un utente e restituisce un token JWT.
+     *
+     * @param loginRequest Oggetto contenente username e password.
+     * @return Risposta con token JWT o errore di autenticazione.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
 

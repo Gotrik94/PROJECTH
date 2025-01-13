@@ -12,6 +12,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Configurazione di sicurezza per gestire l'autenticazione e l'autorizzazione
+ * degli endpoint protetti tramite token JWT.
+ */
 @Configuration
 public class SecurityConfig {
 
@@ -21,16 +25,35 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
+    /**
+     * Configura il PasswordEncoder utilizzando BCrypt.
+     *
+     * @return l'istanza di PasswordEncoder.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configura l'AuthenticationManager per la gestione delle autenticazioni.
+     *
+     * @param authenticationConfiguration configurazione dell'autenticazione.
+     * @return l'istanza di AuthenticationManager.
+     * @throws Exception in caso di errore nella configurazione.
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    /**
+     * Configura la catena di sicurezza per gestire le richieste HTTP.
+     *
+     * @param http configurazione di HttpSecurity.
+     * @return la catena di sicurezza configurata.
+     * @throws Exception in caso di errore nella configurazione.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())

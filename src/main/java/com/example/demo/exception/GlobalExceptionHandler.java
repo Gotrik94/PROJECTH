@@ -1,39 +1,44 @@
 package com.example.demo.exception;
 
-import com.example.demo.util.MessageHeaderHolder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
-@RestControllerAdvice
+/**
+ * Gestisce globalmente le eccezioni nell'applicazione.
+ * Fornisce risposte strutturate per errori comuni.
+ */
+@ControllerAdvice
 public class GlobalExceptionHandler {
 
-    private final MessageHeaderHolder messageHeaderHolder;
-
-    @Autowired
-    public GlobalExceptionHandler(MessageHeaderHolder messageHeaderHolder) {
-        this.messageHeaderHolder = messageHeaderHolder;
+    /**
+     * Gestisce le eccezioni IllegalArgumentException.
+     *
+     * @param ex L'eccezione catturata.
+     * @return Una risposta con messaggio di errore e stato HTTP 400.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "error", ex.getMessage(),
+                "code", HttpStatus.BAD_REQUEST.value()
+        ));
     }
 
     /**
-     * Gestisce le eccezioni di token JWT invalido.
+     * Gestisce tutte le altre eccezioni generiche.
      *
-     * @param ex Eccezione lanciata quando il token JWT è invalido.
-     * @return Risposta con codice 401 e messaggio di errore.
+     * @param ex L'eccezione catturata.
+     * @return Una risposta con messaggio di errore e stato HTTP 500.
      */
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<?> handleInvalidToken(InvalidTokenException ex) {
-        String errorMessage = messageHeaderHolder.getMessage("auth.invalid");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(
-                        "error", errorMessage,
-                        "code", HttpStatus.UNAUTHORIZED.value()
-                ));
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "error", ex.getMessage(),
+                "code", HttpStatus.INTERNAL_SERVER_ERROR.value()
+        ));
     }
-
-    // Puoi aggiungere altri metodi per gestire altre eccezioni
 }

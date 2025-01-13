@@ -8,12 +8,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
+
+/**
+ * Filtro di autenticazione per validare i token JWT nelle richieste in ingresso.
+ * Questo filtro viene eseguito una volta per ogni richiesta e verifica la validità del token JWT.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -25,6 +29,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.messageHeaderHolder = messageHeaderHolder;
     }
 
+
+    /**
+     * Determina se il filtro deve essere applicato alla richiesta corrente.
+     *
+     * @param request La richiesta HTTP in ingresso.
+     * @return true se il filtro non deve essere applicato, false altrimenti.
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         // Escludi i path non protetti
@@ -32,9 +43,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return path.equals("/api/user/register"); // Aggiungi altri path esclusi se necessario
     }
 
+    /**
+     * Esegue il filtro per validare il token JWT presente nell'intestazione Authorization.
+     *
+     * @param request La richiesta HTTP in ingresso.
+     * @param response La risposta HTTP in uscita.
+     * @param filterChain La catena di filtri.
+     * @throws IOException In caso di errori di I/O.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+            throws IOException {
         try {
             String authorizationHeader = request.getHeader("Authorization");
 

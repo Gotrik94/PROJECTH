@@ -12,7 +12,8 @@ import java.util.Optional;
 
 /**
  * Servizio per la gestione degli utenti.
- * Fornisce metodi per la registrazione, aggiornamento e cancellazione degli utenti.
+ * Fornisce metodi per la registrazione, l'aggiornamento dello stato e delle statistiche,
+ * e la gestione delle informazioni degli utenti.
  */
 @Service
 public class UserService {

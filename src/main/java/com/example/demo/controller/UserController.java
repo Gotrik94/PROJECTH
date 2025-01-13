@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+
+/**
+ * Controller per la gestione degli utenti, inclusa la registrazione,
+ * il recupero del profilo e l'aggiornamento dello stato o delle statistiche.
+ */
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -22,7 +27,12 @@ public class UserController {
     @Autowired
     private MessageHeaderHolder messageHeaderHolder;
 
-    // Endpoint per la registrazione di un nuovo utente
+    /**
+     * Registra un nuovo utente.
+     *
+     * @param user Dati dell'utente da registrare.
+     * @return Risposta con i dettagli dell'utente registrato.
+     */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         // Controllo se l'username è già in uso
@@ -59,7 +69,12 @@ public class UserController {
                 ));
     }
 
-    // Recupera il profilo dell'utente autenticato
+    /**
+     * Recupera il profilo dell'utente autenticato.
+     *
+     * @param authentication Contesto di autenticazione corrente.
+     * @return Profilo dell'utente autenticato.
+     */
     @GetMapping("/profile")
     public ResponseEntity<?> getUserProfile(Authentication authentication) {
         String username = authentication.getName();
@@ -76,7 +91,14 @@ public class UserController {
                         )));
     }
 
-    // Aggiorna i progressi del giocatore
+    /**
+     * Aggiorna i progressi di gioco del giocatore.
+     *
+     * @param username Nome utente del giocatore.
+     * @param gamesPlayed Numero di partite giocate.
+     * @param gamesWon Numero di partite vinte.
+     * @return Messaggio di successo.
+     */
     @PutMapping("/update-stats")
     public ResponseEntity<?> updateGameStats(@RequestParam String username,
                                              @RequestParam int gamesPlayed,
@@ -89,7 +111,13 @@ public class UserController {
         ));
     }
 
-    // Aggiorna lo status nel gioco del giocatore
+    /**
+     * Aggiorna lo stato di un utente nel gioco.
+     *
+     * @param username Nome utente del giocatore.
+     * @param status Nuovo stato da impostare.
+     * @return Messaggio di successo.
+     */
     @PutMapping("/update-status")
     public ResponseEntity<?> updateUserStatus(@RequestParam String username, @RequestParam UserStatus status) {
         userService.updateUserStatus(username, status);
@@ -100,7 +128,12 @@ public class UserController {
         ));
     }
 
-    // Elimina User
+    /**
+     * Elimina un utente dal sistema.
+     *
+     * @param username Nome utente da eliminare.
+     * @return Messaggio di successo o errore se l'utente non esiste.
+     */
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteUser(@RequestParam String username) {
         return userService.findByUsername(username)
