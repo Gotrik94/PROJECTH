@@ -8,7 +8,6 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -24,22 +23,21 @@ public class JwtUtil {
     private final JwtConfig jwtConfig;
     private final SecretKey key;
 
-    @Autowired
+    /**
+     * Costruttore con iniezione delle dipendenze.
+     *
+     * @param jwtConfig Configurazione JWT.
+     */
     public JwtUtil(JwtConfig jwtConfig) {
         this.jwtConfig = jwtConfig;
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtConfig.getSecret()));
     }
 
-    /**
-     * Genera un token JWT per un dato utente.
-     *
-     * @param user L'utente per il quale generare il token.
-     * @return Il token JWT generato.
-     */
     public String generateToken(User user) {
         log.info("Generating token for user: {}", user.getUsername());
-        String token = Jwts.builder()
+        return Jwts.builder()
                 .setSubject(user.getUsername())
+                .claim("userId", user.getId())
                 .claim("role", user.getRole())
                 .claim("email", user.getEmail())
                 .setIssuer(jwtConfig.getIssuer())
@@ -47,79 +45,53 @@ public class JwtUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()))
                 .signWith(key)
                 .compact();
-        log.debug("Token generated: {}", token);
-        return token;
     }
 
-    /**
-     * Estrae il nome utente da un token JWT.
-     *
-     * @param token Il token JWT da cui estrarre il nome utente.
-     * @return Il nome utente estratto dal token.
-     */
     public String extractUsername(String token) {
-        log.debug("Extracting username from token: {}", token);
-        return extractAllClaims(token).getSubject();
+        return extractClaim(token, Claims::getSubject);
     }
 
-    /**
-     * Valida un token JWT rispetto a un nome utente.
-     *
-     * @param token Il token JWT da validare.
-     * @param username Il nome utente da confrontare.
-     * @return true se il token è valido, false altrimenti.
-     */
+    public Integer extractUserId(String token) {
+        log.debug("Extracting userId from token.");
+        return extractClaim(token, claims -> claims.get("userId", Integer.class));
+    }
+
     public boolean validateToken(String token, String username) {
-        log.debug("Validating token for username: {}", username);
-        String extractedUsername = extractUsername(token);
-        boolean isValid = extractedUsername.equals(username) && !isTokenExpired(token);
+        final String extractedUsername = extractUsername(token);
+        return extractedUsername.equals(username) && !isTokenExpired(token);
+    }
+
+    public boolean validateTokenForUserId(String token, Integer userId) {
+        final Integer extractedUserId = extractUserId(token);
+        boolean isValid = extractedUserId.equals(userId) && !isTokenExpired(token);
         if (isValid) {
-            log.info("Token is valid for username: {}", username);
+            log.info("Token is valid for userId: {}", userId);
         } else {
-            log.warn("Token validation failed for username: {}", username);
+            log.warn("Token validation failed for userId: {}", userId);
         }
         return isValid;
     }
 
-    /**
-     * Verifica se un token JWT è scaduto.
-     *
-     * @param token Il token JWT da controllare.
-     * @return true se il token è scaduto, false altrimenti.
-     */
     private boolean isTokenExpired(String token) {
-        Date expiration = extractAllClaims(token).getExpiration();
-        boolean isExpired = expiration.before(new Date(System.currentTimeMillis() - jwtConfig.getClockSkew() * 1000));
-        log.debug("Token expiration status: {}", isExpired);
-        return isExpired;
+        final Date expiration = extractClaim(token, Claims::getExpiration);
+        return expiration.before(new Date(System.currentTimeMillis() - jwtConfig.getClockSkew() * 1000));
     }
 
-    /**
-     * Estrae tutti i claims da un token JWT.
-     *
-     * @param token Il token JWT da cui estrarre i claims.
-     * @return I claims estratti dal token.
-     */
     private Claims extractAllClaims(String token) {
-        log.debug("Extracting all claims from token: {}", token);
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
+            log.error("Failed to extract claims from token: {}", e.getMessage());
+            throw new IllegalArgumentException("Invalid token.");
+        }
     }
 
-    /**
-     * Estrae un claim specifico da un token JWT.
-     *
-     * @param token Il token JWT da cui estrarre il claim.
-     * @param claimName Il nome del claim da estrarre.
-     * @param claimType La classe del tipo del claim.
-     * @param <T> Il tipo del claim.
-     * @return Il valore del claim estratto.
-     */
-    public <T> T extractClaim(String token, String claimName, Class<T> claimType) {
-        log.debug("Extracting claim: {} from token: {}", claimName, token);
-        return extractAllClaims(token).get(claimName, claimType);
+    public <T> T extractClaim(String token, java.util.function.Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
     }
 }
