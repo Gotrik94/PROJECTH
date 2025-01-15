@@ -40,6 +40,7 @@ public class JwtUtil {
         log.info("Generating token for user: {}", user.getUsername());
         String token = Jwts.builder()
                 .setSubject(user.getUsername())
+                .claim("userId", user.getId())
                 .claim("role", user.getRole())
                 .claim("email", user.getEmail())
                 .setIssuer(jwtConfig.getIssuer())
@@ -61,6 +62,12 @@ public class JwtUtil {
         log.debug("Extracting username from token: {}", token);
         return extractAllClaims(token).getSubject();
     }
+
+    public Integer extratcUserId(String token) {
+        log.debug("Extracting UserId from token: {}", token);
+        return extractAllClaims(token).get("userId", Integer.class);
+    }
+
 
     /**
      * Valida un token JWT rispetto a un nome utente.

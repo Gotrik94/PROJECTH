@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login & WebSocket</title>
+    <title>Login & WebSocket Console</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -21,7 +21,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-            width: 350px;
+            width: 400px;
             text-align: center;
             animation: fadeIn 0.5s;
         }
@@ -30,27 +30,6 @@
             font-size: 1.8em;
             color: #333;
             margin-bottom: 20px;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 0.9em;
-            margin-bottom: 5px;
-            color: #555;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1em;
-            box-sizing: border-box;
         }
 
         .button {
@@ -63,14 +42,25 @@
             font-size: 1em;
             cursor: pointer;
             transition: background-color 0.3s;
+            margin-top: 10px;
         }
 
         .button:hover {
             background-color: #0056b3;
         }
 
-        #websocket-panel {
-            display: none;
+        .input-group {
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
         }
 
         #messages {
@@ -83,6 +73,7 @@
             height: 150px;
             font-size: 0.9em;
             color: #333;
+            margin-top: 10px;
         }
 
         @keyframes fadeIn {
@@ -99,6 +90,7 @@
     <script>
         let ws;
 
+        // Funzione di login
         async function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -128,6 +120,7 @@
             }
         }
 
+        // Funzione per connettere il WebSocket
         function connectWebSocket() {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -156,6 +149,7 @@
             };
         }
 
+        // Funzione per inviare messaggi
         function sendMessage() {
             const message = document.getElementById('message').value;
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -165,6 +159,49 @@
             } else {
                 alert('WebSocket is not connected.');
             }
+        }
+
+        // Funzione per unirsi alla coda di matchmaking
+            async function joinQueue() {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('You must log in first.');
+                    return;
+                }
+
+                try {
+                    // Estrazione del playerId dal token (se disponibile)
+                    const payload = JSON.parse(atob(token.split('.')[1])); // Decodifica il payload JWT
+                    const playerId = payload.userId || 'unknown'; // Usa "userId" come ID giocatore, o un valore di fallback
+
+                    const response = await fetch(`/api/matchmaking/join?playerId=${playerId}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        alert(data.message); // Mostra il messaggio di successo
+                    } else {
+                        // Gestione degli errori
+                        const errorData = await response.json();
+                        alert(`Failed to join matchmaking: ${errorData.error || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    console.error('Error during joinQueue:', error);
+                    alert('An unexpected error occurred while joining matchmaking.');
+                }
+        }
+
+        // Funzione per lasciare la coda di matchmaking
+        async function leaveQueue() {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/matchmaking/leave?playerId=user123', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const data = await response.json();
+            alert(data.message);
         }
     </script>
 </head>
@@ -182,16 +219,27 @@
     <button class="button" onclick="login()">Login</button>
 </div>
 
-<div class="container" id="websocket-panel">
-    <h1>WebSocket Panel</h1>
+<div class="container" id="websocket-panel" style="display: none;">
+    <h1>WebSocket Console</h1>
     <p>Status: <span id="socket-status">Disconnected</span></p>
-    <div class="input-group">
-        <label for="message">Message</label>
-        <input type="text" id="message" placeholder="Enter your message">
-    </div>
-    <button class="button" onclick="sendMessage()">Send Message</button>
-    <button class="button" onclick="connectWebSocket()">Connect WebSocket</button>
+
+    <!-- Console dei messaggi -->
     <div id="messages"></div>
+
+    <!-- Input per inviare messaggi -->
+    <div class="input-group">
+        <input type="text" id="message" placeholder="Enter a message">
+        <button class="button" onclick="sendMessage()">Send Message</button>
+    </div>
+
+    <!-- Pannello matchmaking -->
+    <div class="input-group">
+        <button class="button" onclick="joinQueue()">Join Matchmaking</button>
+        <button class="button" onclick="leaveQueue()">Leave Matchmaking</button>
+    </div>
+
+    <!-- Connessione WebSocket -->
+    <button class="button" onclick="connectWebSocket()">Connect WebSocket</button>
 </div>
 </body>
 </html>
