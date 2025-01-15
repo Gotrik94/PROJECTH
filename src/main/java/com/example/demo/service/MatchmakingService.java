@@ -3,7 +3,6 @@ package com.example.demo.service;
 import com.example.demo.websocket.WebSocketMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Queue;
@@ -17,12 +16,20 @@ public class MatchmakingService {
 
     private static final Logger logger = LoggerFactory.getLogger(MatchmakingService.class);
 
-    // Necessario per gestire le notifiche da mandare ai giocatori
-    @Autowired
-    private WebSocketMessageHandler webSocketHandler;
+    // Gestore dei messaggi WebSocket per notificare i giocatori
+    private final WebSocketMessageHandler webSocketHandler;
 
     // Coda per gestire i giocatori in attesa di un match
     private final Queue<String> matchmakingQueue = new ConcurrentLinkedQueue<>();
+
+    /**
+     * Costruttore con iniezione delle dipendenze.
+     *
+     * @param webSocketHandler Gestore dei messaggi WebSocket.
+     */
+    public MatchmakingService(WebSocketMessageHandler webSocketHandler) {
+        this.webSocketHandler = webSocketHandler;
+    }
 
     /**
      * Aggiunge un giocatore alla coda di matchmaking.
@@ -31,6 +38,11 @@ public class MatchmakingService {
      * @return Messaggio di conferma.
      */
     public String addToQueue(String playerId) {
+        if (playerId == null || playerId.isBlank()) {
+            logger.warn("Invalid player ID provided for matchmaking.");
+            return "Player ID cannot be null or empty.";
+        }
+
         if (matchmakingQueue.contains(playerId)) {
             logger.info("Player [{}] is already in the matchmaking queue.", playerId);
             return "You are already in the matchmaking queue.";
@@ -52,6 +64,11 @@ public class MatchmakingService {
      * @return Messaggio di conferma.
      */
     public String removeFromQueue(String playerId) {
+        if (playerId == null || playerId.isBlank()) {
+            logger.warn("Invalid player ID provided for matchmaking removal.");
+            return "Player ID cannot be null or empty.";
+        }
+
         if (matchmakingQueue.remove(playerId)) {
             logger.info("Player [{}] removed from the matchmaking queue.", playerId);
             return "You have been removed from the matchmaking queue.";
@@ -71,8 +88,9 @@ public class MatchmakingService {
 
             if (player1 != null && player2 != null) {
                 logger.info("Match created between [{}] and [{}].", player1, player2);
-                // Qui possiamo creare una sessione di gioco o notificare i giocatori
                 notifyPlayers(player1, player2);
+            } else {
+                logger.warn("Matchmaking failed due to insufficient players.");
             }
         }
     }
@@ -87,8 +105,9 @@ public class MatchmakingService {
         try {
             webSocketHandler.sendMessageToUser(player1, "Match found! Your opponent is " + player2);
             webSocketHandler.sendMessageToUser(player2, "Match found! Your opponent is " + player1);
+            logger.info("Notified players [{}] and [{}] of their match.", player1, player2);
         } catch (Exception e) {
-            logger.error("Error notifying players: {}", e.getMessage());
+            logger.error("Error notifying players [{}] and [{}]: {}", player1, player2, e.getMessage());
         }
     }
 }

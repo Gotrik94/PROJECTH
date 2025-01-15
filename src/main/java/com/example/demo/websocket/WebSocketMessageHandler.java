@@ -3,7 +3,6 @@ package com.example.demo.websocket;
 import com.example.demo.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -22,8 +21,16 @@ public class WebSocketMessageHandler extends TextWebSocketHandler {
     // Mappa delle sessioni attive, associando un playerId alla sessione WebSocket
     private final ConcurrentHashMap<String, WebSocketSession> activeSessions = new ConcurrentHashMap<>();
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+
+    /**
+     * Costruttore con iniezione delle dipendenze.
+     *
+     * @param jwtUtil Utility per la gestione dei token JWT.
+     */
+    public WebSocketMessageHandler(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     /**
      * Metodo chiamato quando una nuova connessione WebSocket viene stabilita.
@@ -32,12 +39,13 @@ public class WebSocketMessageHandler extends TextWebSocketHandler {
      */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        Integer playerId = getPlayerIdFromSession(session); // Estrai il playerId
+        Integer playerId = getPlayerIdFromSession(session);
+
         if (playerId != null) {
             activeSessions.put(playerId.toString(), session);
             logger.info("WebSocket connection established for player [{}]", playerId);
         } else {
-            logger.warn("WebSocket connection rejected: missing player ID.");
+            logger.warn("WebSocket connection rejected: invalid or missing player ID.");
             session.close();
         }
     }
@@ -51,7 +59,9 @@ public class WebSocketMessageHandler extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
-        logger.info("Message received from [{}]: {}", session.getId(), payload);
+        logger.info("Message received from session [{}]: {}", session.getId(), payload);
+
+        // Echo del messaggio al client
         session.sendMessage(new TextMessage("Echo: " + payload));
     }
 
@@ -64,9 +74,12 @@ public class WebSocketMessageHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) throws Exception {
         Integer playerId = getPlayerIdFromSession(session);
+
         if (playerId != null) {
-            activeSessions.remove(playerId);
+            activeSessions.remove(playerId.toString());
             logger.info("WebSocket connection closed for player [{}]. Status: {}", playerId, status);
+        } else {
+            logger.warn("WebSocket session closed for unidentified session [{}].", session.getId());
         }
     }
 
@@ -78,6 +91,7 @@ public class WebSocketMessageHandler extends TextWebSocketHandler {
      */
     public void sendMessageToUser(String playerId, String message) throws Exception {
         WebSocketSession session = activeSessions.get(playerId);
+
         if (session != null && session.isOpen()) {
             session.sendMessage(new TextMessage(message));
             logger.info("Message sent to player [{}]: {}", playerId, message);
@@ -93,11 +107,17 @@ public class WebSocketMessageHandler extends TextWebSocketHandler {
      * @return L'ID del giocatore, se presente.
      */
     private Integer getPlayerIdFromSession(WebSocketSession session) {
-        // Esempio: estrai il token dalla query string e decodifica l'ID giocatore
-        String query = session.getUri().getQuery();
-        if (query != null && query.startsWith("token=")) {
-            String token = query.substring("token=".length());
-            return jwtUtil.extratcUserId(token); // Decodifica l'ID giocatore dal token JWT
+        try {
+            String query = session.getUri().getQuery();
+
+            if (query != null && query.startsWith("token=")) {
+                String token = query.substring("token=".length());
+                return jwtUtil.extractUserId(token);
+            } else {
+                logger.warn("No token found in WebSocket session [{}].", session.getId());
+            }
+        } catch (Exception e) {
+            logger.error("Error extracting player ID from session [{}]: {}", session.getId(), e.getMessage());
         }
         return null;
     }
