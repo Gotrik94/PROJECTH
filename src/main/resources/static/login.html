@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & WebSocket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+            animation: fadeIn 0.5s;
+        }
+
+        .container h1 {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        #websocket-panel {
+            display: none;
+        }
+
+        #messages {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: left;
+            overflow-y: auto;
+            height: 150px;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+    <script>
+        let ws;
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    document.getElementById('login-panel').style.display = 'none';
+                    document.getElementById('websocket-panel').style.display = 'block';
+                    alert('Login successful! You can now connect to WebSocket.');
+                } else {
+                    const errorData = await response.json();
+                    alert(`Login failed: ${errorData.error}`);
+                }
+            } catch (error) {
+                console.error('Error during login:', error);
+                alert('An error occurred during login.');
+            }
+        }
+
+        function connectWebSocket() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('You must log in first.');
+                return;
+            }
+
+            ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+            ws.onopen = () => {
+                console.log('WebSocket connected.');
+                document.getElementById('socket-status').innerText = 'Connected';
+            };
+            ws.onmessage = (event) => {
+                console.log('Message received:', event.data);
+                const messages = document.getElementById('messages');
+                messages.innerText += `\n${event.data}`;
+                messages.scrollTop = messages.scrollHeight;
+            };
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                alert('An error occurred with WebSocket.');
+            };
+            ws.onclose = () => {
+                console.log('WebSocket disconnected.');
+                document.getElementById('socket-status').innerText = 'Disconnected';
+            };
+        }
+
+        function sendMessage() {
+            const message = document.getElementById('message').value;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(message);
+                document.getElementById('message').value = '';
+                console.log('Message sent:', message);
+            } else {
+                alert('WebSocket is not connected.');
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="container" id="login-panel">
+    <h1>Login</h1>
+    <div class="input-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter your username">
+    </div>
+    <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password">
+    </div>
+    <button class="button" onclick="login()">Login</button>
+</div>
+
+<div class="container" id="websocket-panel">
+    <h1>WebSocket Panel</h1>
+    <p>Status: <span id="socket-status">Disconnected</span></p>
+    <div class="input-group">
+        <label for="message">Message</label>
+        <input type="text" id="message" placeholder="Enter your message">
+    </div>
+    <button class="button" onclick="sendMessage()">Send Message</button>
+    <button class="button" onclick="connectWebSocket()">Connect WebSocket</button>
+    <div id="messages"></div>
+</div>
+</body>
+</html>

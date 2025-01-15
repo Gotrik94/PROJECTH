@@ -122,4 +122,27 @@ public class JwtUtil {
         log.debug("Extracting claim: {} from token: {}", claimName, token);
         return extractAllClaims(token).get(claimName, claimType);
     }
+
+    public String validateTokenAndGetUsername(String token) {
+        try {
+            // Parsing e validazione del token
+            Claims claims = Jwts.parser()
+                    .setSigningKey(key)
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            // Controlla la data di scadenza
+            if (claims.getExpiration().before(new Date())) {
+                throw new RuntimeException("Token expired.");
+            }
+
+            // Restituisce il nome utente dal token
+            return claims.getSubject();
+        } catch (Exception e) {
+            log.error("Token validation failed: {}", e.getMessage());
+            throw new RuntimeException("Invalid token.");
+        }
+    }
+
+
 }
