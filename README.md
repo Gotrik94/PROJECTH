@@ -53,12 +53,6 @@ git clone https://github.com/Gotrik94/PROJECTH.git
    cd backend
    ./mvnw spring-boot:run
    ```
-
-## Struttura del Progetto
-
-- **backend/**: Contiene il codice sorgente Java per il backend.
-- **database/**: Script SQL per configurare il database.
-
 ## Contribuire
 
 Siamo entusiasti di ricevere contributi! Segui questi passaggi per contribuire:
