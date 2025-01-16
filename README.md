@@ -6,78 +6,60 @@
 ![GitHub forks](https://img.shields.io/github/forks/Gotrik94/PROJECTH?style=flat-square)
 ![License](https://img.shields.io/github/license/Gotrik94/PROJECTH?style=flat-square)
 
-## Prefazione
+# ProjectH
 
-Il Progetto PROJECTH è stato concepito per creare una demo leggera e funzionale che si concentri su due componenti chiave:
+ProjectH è un progetto concepito per realizzare una demo leggera e funzionale, pensata per esplorare e testare sistemi complessi come il matchmaking e la gestione delle sessioni in un contesto multiplayer. Il focus principale è sulla creazione di una base tecnologica solida, piuttosto che sulla complessità del gameplay. 🌐
 
-- 🕹️ **Matchmaking**: per la gestione delle partite tra giocatori.
-- 🔒 **Gestione delle sessioni**: per assicurare un'esperienza stabile e coerente.
+## Obiettivi del Progetto 💡
 
-L'obiettivo principale è costruire una base tecnologica solida per analizzare queste componenti essenziali, lasciando spazio a futuri sviluppi più complessi.
+- Testare la gestione delle sessioni multiplayer.
+- Implementare un sistema di matchmaking efficiente.
+- Creare un prototipo dimostrativo semplice e funzionale.
 
 ## Tecnologie Utilizzate
 
-- 🗃️ **Database**: MySQL - Per la gestione dei dati persistenti (profili utente, statistiche di gioco, configurazioni di sistema).
-- 💻 **Frontend**: Angular - Per creare un'interfaccia utente moderna e reattiva.
-- 🔧 **Backend**: Java con Spring Boot - Per la logica applicativa, gestione delle sessioni e matchmaking.
+- **Backend:** Java con Spring Boot
+- **Database:** MySQL
 
-## Funzionalità Principali
+## Caratteristiche Principali
 
-1. 🛠️ **Creazione del Personaggio**: I giocatori possono selezionare e personalizzare un personaggio utilizzando carte dalla propria libreria.
-2. 🎴 **Meccaniche delle Carte**:
-    - 🧮 Ogni carta ha un costo in punti.
-    - 📏 I giocatori devono rispettare un punteggio massimo complessivo (es. 12 punti per personaggio).
-    - ⚙️ Le combinazioni sono flessibili (es. 3 carte da 4 punti o 2 da 3 e 1 da 6 punti).
-3. 🤖 **Simulazione Automatica del Match**:
-    - 🎯 I benefici delle carte selezionate vengono applicati automaticamente.
-    - 🩸 Il match termina quando uno dei due personaggi raggiunge 0 punti vita.
+- **Sistema di matchmaking:** Permette agli utenti di mettersi in coda per un match.
+- **Personalizzazione dei personaggi:** Gli utenti possono selezionare un personaggio e personalizzarlo utilizzando una libreria di elementi con punteggi predefiniti.
+- **Simulazione degli incontri:** Gli incontri vengono gestiti automaticamente dal sistema.
+- **Gestione dei dati persistenti:** Utilizzo di MySQL per memorizzare profili utente, statistiche di gioco e configurazioni.
+
+## Come Clonare il Progetto
+
+```bash
+git clone https://github.com/Gotrik94/PROJECTH.git
+```
+
+## Requisiti di Sistema 🔢
+
+- **Java:** Versione 17 o superiore
+- **MySQL:** Versione 8 o superiore
+
+## Configurazione del Progetto
+
+1. Configurare il database:
+
+   - Creare uno schema MySQL denominato `projecth` utilizzando il comando:
+     ```sql
+     CREATE SCHEMA projecth;
+     ```
+   - Configurare le credenziali di accesso al database nel file `application.properties` del backend.
+
+2. Avviare il backend:
+
+   ```bash
+   cd backend
+   ./mvnw spring-boot:run
+   ```
 
 ## Struttura del Progetto
 
-### Frontend
-- 🌐 Creato con **Angular** per garantire una navigazione fluida e un'esperienza utente intuitiva.
-
-### Backend
-- ⚙️ Implementato in **Java Spring Boot**, con un'attenzione particolare alla scalabilità e alla gestione delle sessioni.
-
-### Database
-- 🗂️ Il database **MySQL** contiene:
-    - 🧑‍💻 Tabelle per i profili utente.
-    - 🃏 Tabelle per le carte e le configurazioni dei personaggi.
-    - 📊 Log delle partite e delle statistiche.
-
-## Installazione
-
-### Prerequisiti
-
-- 🛠️ **Node.js** e **npm** (per il frontend Angular).
-- ☕ **JDK 17+** (per il backend Java con Spring Boot).
-- 🗃️ **MySQL** (per il database).
-
-### Istruzioni
-
-1. 🔄 Clona il repository:
-    ```bash
-    git clone https://github.com/Gotrik94/PROJECTH.git
-    ```
-
-2. 🗄️ Configura il database:
-    - Il database verrà creato automaticamente al primo avvio del backend, quindi non è necessaria alcuna configurazione manuale iniziale.
-
-3. 🚀 Avvia il backend:
-    ```bash
-    cd backend
-    ./mvnw spring-boot:run
-    ```
-
-4. 💻 Avvia il frontend:
-    ```bash
-    cd frontend
-    npm install
-    ng serve
-    ```
-
-5. 🌍 Accedi all'applicazione all'indirizzo [http://localhost:4200](http://localhost:4200).
+- **backend/**: Contiene il codice sorgente Java per il backend.
+- **database/**: Script SQL per configurare il database.
 
 ## Contribuire
 
