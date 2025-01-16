@@ -6,8 +6,6 @@
 ![GitHub forks](https://img.shields.io/github/forks/Gotrik94/PROJECTH?style=flat-square)
 ![License](https://img.shields.io/github/license/Gotrik94/PROJECTH?style=flat-square)
 
-# ProjectH
-
 ProjectH è un progetto concepito per realizzare una demo leggera e funzionale, pensata per esplorare e testare sistemi complessi come il matchmaking e la gestione delle sessioni in un contesto multiplayer. Il focus principale è sulla creazione di una base tecnologica solida, piuttosto che sulla complessità del gameplay. 🌐
 
 ## Obiettivi del Progetto 💡
